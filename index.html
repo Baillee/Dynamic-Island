@@ -2,47 +2,120 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Dynamic Island Web Mock</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>iPhone 13 Emulator with Dynamic Island</title>
 <style>
-  body {
-    margin: 0;
-    background: #f0f0f0;
+  /* Basic reset */
+  * {
+    box-sizing: border-box;
+  }
+  body, html {
+    margin: 0; padding: 0; height: 100%;
+    background: #111;
     display: flex;
     justify-content: center;
-    padding-top: 50px;
+    align-items: center;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
       Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  /* iPhone frame container */
+  .iphone {
+    position: relative;
+    width: 390px;  /* iPhone 13 logical width */
+    height: 844px; /* iPhone 13 logical height */
+    border-radius: 50px;
+    background: linear-gradient(145deg, #e0e0e0, #bfbfbf);
+    box-shadow: 0 0 60px rgba(0,0,0,0.9);
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* Screen */
+  .screen {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #4b6cb7, #182848);
+    overflow: hidden;
+  }
+
+  /* Notch */
+  .notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 210px;
+    height: 30px;
+    background: black;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    z-index: 50;
+  }
+  /* Notch speaker and camera */
+  .notch::before, .notch::after {
+    content: '';
+    position: absolute;
+    top: 9px;
+    background: #222;
+    border-radius: 50%;
+  }
+  .notch::before {
+    left: 40px;
+    width: 12px;
+    height: 12px;
+  }
+  .notch::after {
+    right: 40px;
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Dynamic Island base */
   .dynamic-island {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
     background: black;
     color: white;
     border-radius: 9999px;
-    width: 120px;
-    height: 35px;
+    width: 130px;
+    height: 38px;
     display: flex;
     align-items: center;
     padding: 0 15px;
     cursor: pointer;
     user-select: none;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    transition: width 0.4s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+    overflow: hidden;
   }
   .dynamic-island.expanded {
-    width: 280px;
+    width: 260px;
   }
+
+  /* Dynamic Island contents */
   .icon {
-    font-size: 18px;
+    font-size: 20px;
     margin-right: 10px;
+    flex-shrink: 0;
   }
   .info {
     flex-grow: 1;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    max-width: 0;
     overflow: hidden;
+    white-space: nowrap;
+    transition: opacity 0.3s ease, max-width 0.4s ease;
   }
   .dynamic-island.expanded .info {
     opacity: 1;
+    max-width: 140px;
   }
   .info .title {
     font-size: 12px;
@@ -50,47 +123,144 @@
     margin-bottom: 2px;
   }
   .info .song {
-    font-weight: bold;
+    font-weight: 600;
     font-size: 14px;
   }
   .play-button {
-    font-size: 16px;
+    font-size: 18px;
     margin-left: 10px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
+  .dynamic-island.expanded .play-button {
+    opacity: 1;
+  }
+
+  /* Home screen grid */
+  .home-screen {
+    position: absolute;
+    top: 60px;
+    bottom: 30px;
+    left: 0;
+    right: 0;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 90px;
+    gap: 15px;
+    overflow-y: auto;
+  }
+  .app-icon {
+    background: rgba(255,255,255,0.15);
+    border-radius: 22px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.15s ease;
+  }
+  .app-icon:active {
+    transform: scale(0.9);
+  }
+  .app-icon .icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+  }
+  .app-icon .label {
+    font-size: 12px;
+    text-align: center;
+  }
+
+  /* Bottom home indicator */
+  .home-indicator {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 20px;
+    box-shadow: 0 0 5px rgba(255,255,255,0.7);
+  }
+
 </style>
 </head>
 <body>
-  <div id="island" class="dynamic-island" onclick="toggleIsland()">
-    <div class="icon">🎵</div>
-    <div class="info">
-      <div class="title">Now Playing</div>
-      <div class="song">Your Song Name</div>
+  <div class="iphone" role="main" aria-label="iPhone 13 emulator">
+    <div class="screen">
+      <div class="notch"></div>
+
+      <div id="dynamicIsland" class="dynamic-island" role="button" aria-pressed="false" tabindex="0" aria-label="Dynamic Island. Tap to expand or collapse.">
+        <div class="icon">🎵</div>
+        <div class="info">
+          <div class="title">Now Playing</div>
+          <div class="song">Your Song Name</div>
+        </div>
+        <div class="play-button">▶️</div>
+      </div>
+
+      <div class="home-screen" role="grid" aria-label="Home Screen Apps">
+        <div class="app-icon" role="button" tabindex="0" aria-label="Messages app">
+          <div class="icon">💬</div>
+          <div class="label">Messages</div>
+        </div>
+        <div class="app-icon" role="button" tabindex="0" aria-label="Calendar app">
+          <div class="icon">📅</div>
+          <div class="label">Calendar</div>
+        </div>
+        <div class="app-icon" role="button" tabindex="0" aria-label="Photos app">
+          <div class="icon">📸</div>
+          <div class="label">Photos</div>
+        </div>
+        <div class="app-icon" role="button" tabindex="0" aria-label="Settings app">
+          <div class="icon">⚙️</div>
+          <div class="label">Settings</div>
+        </div>
+        <!-- Add more app icons as you like -->
+      </div>
+
+      <div class="home-indicator" aria-hidden="true"></div>
     </div>
-    <div class="play-button">▶️</div>
   </div>
 
 <script>
-  const island = document.getElementById('island');
-  let expanded = false;
-  const info = island.querySelector('.info');
-  const playButton = island.querySelector('.play-button');
+  const dynamicIsland = document.getElementById('dynamicIsland');
 
-  // Start collapsed
-  info.style.display = 'none';
-  playButton.style.display = 'none';
-
-  function toggleIsland() {
-    expanded = !expanded;
-    if (expanded) {
-      island.classList.add('expanded');
-      info.style.display = 'block';
-      playButton.style.display = 'block';
-    } else {
-      island.classList.remove('expanded');
-      info.style.display = 'none';
-      playButton.style.display = 'none';
-    }
+  function toggleDynamicIsland() {
+    const expanded = dynamicIsland.classList.toggle('expanded');
+    dynamicIsland.setAttribute('aria-pressed', expanded ? 'true' : 'false');
   }
+
+  dynamicIsland.addEventListener('click', toggleDynamicIsland);
+  dynamicIsland.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleDynamicIsland();
+    }
+  });
+
+  // Add click effects on app icons (just scale)
+  const apps = document.querySelectorAll('.app-icon');
+  apps.forEach(app => {
+    app.addEventListener('click', () => {
+      app.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        app.style.transform = '';
+      }, 150);
+    });
+    app.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        app.click();
+      }
+    });
+  });
 </script>
 </body>
 </html>
